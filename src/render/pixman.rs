@@ -2,12 +2,13 @@
 
 use std::mem;
 
-use libc::{c_int, c_uint};
-use wlroots_sys::{pixman_box32_t, pixman_region32_clear, pixman_region32_copy,
-                  pixman_region32_equal, pixman_region32_fini, pixman_region32_init,
-                  pixman_region32_intersect, pixman_region32_not_empty, pixman_region32_reset,
-                  pixman_region32_subtract, pixman_region32_t, pixman_region32_translate,
-                  pixman_region32_union, pixman_region32_union_rect};
+use libc::{c_float, c_int, c_uint};
+use wlroots_sys::{wl_output_transform, wlr_region_expand, wlr_region_rotated_bounds,
+                  wlr_region_scale, wlr_region_transform, pixman_box32_t, pixman_region32_clear,
+                  pixman_region32_copy, pixman_region32_equal, pixman_region32_fini,
+                  pixman_region32_init, pixman_region32_intersect, pixman_region32_not_empty,
+                  pixman_region32_reset, pixman_region32_subtract, pixman_region32_t,
+                  pixman_region32_translate, pixman_region32_union, pixman_region32_union_rect};
 
 use {Area, Origin, Size};
 
@@ -21,10 +22,25 @@ impl PixmanRegion {
     /// Make a new pixman region.
     pub fn new() -> Self {
         unsafe {
-            // NOTE Rational for uninitialized memory:
+            // NOTE Rational for zeroed memory:
             // We are automatically filling it in with pixman_region32_init.
-            let mut region = mem::uninitialized();
+            let mut region = mem::zeroed();
             pixman_region32_init(&mut region);
+            PixmanRegion { region }
+        }
+    }
+
+    /// Scales a region, ie. multiplies all its coordinates by `scale`.
+    ///
+    /// The resulting coordinates are rounded up or down so that the new region is
+    /// at least as big as the original one.
+    pub fn scale(&mut self, scale: c_float) -> PixmanRegion {
+        unsafe {
+            // NOTE Rationale for zeroed:
+            // This snippet is panic safe and will always be initlized by the union
+            // function.
+            let mut region: pixman_region32_t = mem::zeroed();
+            wlr_region_scale(&mut region, &mut self.region, scale);
             PixmanRegion { region }
         }
     }
@@ -57,6 +73,48 @@ impl PixmanRegion {
         }
     }
 
+    /// Applies a transform to a region inside a box of size `width` x `height`.
+    pub fn transform(&mut self,
+                     transform: wl_output_transform,
+                     width: c_int,
+                     height: c_int)
+                     -> PixmanRegion {
+        unsafe {
+            // NOTE Rationale for zeroed:
+            // This snippet is panic safe and will always be initlized by the union
+            // function.
+            let mut region: pixman_region32_t = mem::zeroed();
+            wlr_region_transform(&mut region, &mut self.region, transform, width, height);
+            PixmanRegion { region }
+        }
+    }
+
+    /// Expands the region by `distance`. If `distance` is negative it shrinks
+    /// the region.
+    pub fn expand(&mut self, distance: c_int) -> PixmanRegion {
+        unsafe {
+            // NOTE Rationale for zeroed:
+            // This snippet is panic safe and will always be initlized by the union
+            // function.
+            let mut region: pixman_region32_t = mem::zeroed();
+            wlr_region_expand(&mut region, &mut self.region, distance);
+            PixmanRegion { region }
+        }
+    }
+
+    /// Builds the smallest possible region that contains the region rotated
+    /// about the point (ox, oy).
+    pub fn rotated_bounds(&mut self, rotation: c_float, ox: c_int, oy: c_int) -> PixmanRegion {
+        unsafe {
+            // NOTE Rationale for zeroed:
+            // This snippet is panic safe and will always be initlized by the union
+            // function.
+            let mut region: pixman_region32_t = mem::zeroed();
+            wlr_region_rotated_bounds(&mut region, &mut self.region, rotation, ox, oy);
+            PixmanRegion { region }
+        }
+    }
+
     /// Translate the region using the given coordinates.
     pub fn translate(&mut self, x: c_int, y: c_int) {
         unsafe {
@@ -67,7 +125,7 @@ impl PixmanRegion {
     /// Subtract two pixman regions.
     pub fn subtract(&mut self, other: &mut PixmanRegion) -> PixmanRegion {
         unsafe {
-            // NOTE Rationale for uninitialized:
+            // NOTE Rationale for zeroed:
             // This snippet is panic safe and will always be initlized by the union
             // function.
             let mut region: pixman_region32_t = mem::zeroed();
@@ -80,7 +138,7 @@ impl PixmanRegion {
     /// Take the union of two pixman regions.
     pub fn union(&mut self, other: &mut PixmanRegion) -> PixmanRegion {
         unsafe {
-            // NOTE Rationale for uninitialized:
+            // NOTE Rationale for zeroed:
             // This snippet is panic safe and will always be initlized by the union
             // function.
             let mut region: pixman_region32_t = mem::zeroed();
@@ -93,7 +151,7 @@ impl PixmanRegion {
     /// Take the intersection of two pixman regions.
     pub fn intersect(&mut self, other: &mut PixmanRegion) -> PixmanRegion {
         unsafe {
-            // NOTE Rationale for uninitialized:
+            // NOTE Rationale for zeroed:
             // This snippet is panic safe and will always be initlized by the union
             // function.
             let mut region: pixman_region32_t = mem::zeroed();
