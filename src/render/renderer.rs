@@ -13,6 +13,42 @@ use wlroots_sys::{wl_shm_format, wlr_backend, wlr_backend_get_renderer, wlr_box,
                   wlr_renderer_begin, wlr_renderer_clear, wlr_renderer_destroy, wlr_renderer_end,
                   wlr_renderer_scissor, wlr_texture_from_pixels};
 
+/// The result of starting the renderer on an output.
+///
+/// If swap is not set, then it is not necessary to render and swap the buffers.
+///
+/// If the compositor should still render despite that, you can upgrade the result
+/// even when `swap` is `false`.
+
+/// A renderer that must be manually upgraded.
+///
+/// This is returned in the result of `swap` being `false`, which means
+/// you don't have to swap the buffers based on damage tracking.
+///
+/// However, there may be cases when you want to use the renderer still
+/// and swap the buffers. So this struct allows you to do that.
+#[derive(Debug)]
+pub struct RendererUpgrader<'output> {
+    renderer: *mut wlr_renderer,
+    damage: Option<(PixmanRegion, Duration)>,
+    output: &'output mut Output
+}
+
+impl<'output> RendererUpgrader<'output> {
+    /// Upgrade to a full renderer, despite the fact that you don't
+    /// need to swap the buffers according to the output damage tracking.
+    pub fn upgrade(self) -> Renderer<'output> {
+        let (width, height) = self.output.size();
+        unsafe {
+            self.output.make_current();
+            wlr_renderer_begin(self.renderer, width, height);
+        }
+        Renderer { renderer: self.renderer,
+                   damage: self.damage,
+                   output: self.output }
+    }
+}
+
 /// A generic interface for rendering to the screen.
 ///
 /// Note that it will technically be possible to have multiple renderers
@@ -47,19 +83,37 @@ impl GenericRenderer {
     /// Make the `Renderer` state machine type.
     ///
     /// This automatically makes the given output the current output.
-    pub fn render<'output, T>(&mut self,
+    ///
+    /// If `None` is returned then damage tracking indicates we don't need
+    /// to swap the buffers.
+    pub fn render<'output, T>(&'output mut self,
                               output: &'output mut Output,
                               damage: T)
-                              -> Renderer<'output>
+                              -> Result<Renderer<'output>, RendererUpgrader>
         where T: Into<Option<(PixmanRegion, Duration)>>
     {
         unsafe {
-            output.make_current();
             let (width, height) = output.size();
-            wlr_renderer_begin(self.renderer, width, height);
-            Renderer { renderer: self.renderer,
-                       damage: damage.into(),
-                       output }
+            Ok(match damage.into() {
+                None => {
+                    output.make_current();
+                    wlr_renderer_begin(self.renderer, width, height);
+                    Renderer { renderer: self.renderer,
+                               damage: None,
+                               output }
+                }
+                Some(mut damage) => {
+                    if !output.damage.make_current(&mut damage.0) {
+                        return Err(RendererUpgrader { renderer: self.renderer,
+                                                      damage: Some(damage),
+                                                      output })
+                    }
+                    wlr_renderer_begin(self.renderer, width, height);
+                    Renderer { renderer: self.renderer,
+                               damage: Some(damage),
+                               output }
+                }
+            })
         }
     }
 
@@ -191,7 +245,8 @@ impl<'output> Drop for Renderer<'output> {
         unsafe {
             wlr_renderer_end(self.renderer);
             if let Some((mut damage, when)) = self.damage.take() {
-                self.output.swap_buffers(Some(when), Some(&mut damage));
+                self.output.damage
+                    .swap_buffers(Some(when), Some(&mut damage));
             } else {
                 self.output.swap_buffers(None, None);
             }

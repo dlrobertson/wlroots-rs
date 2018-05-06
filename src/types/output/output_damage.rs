@@ -44,10 +44,6 @@ impl Drop for PixmanRegion {
 #[derive(Debug)]
 /// Tracks damage for an output.
 ///
-/// When a `frame` event is emitted, `make_current` should be
-/// called. If necessary, the output should be repainted and
-/// `swap_buffers` should be called.
-///
 /// No rendering should happen outside a `frame` event handler.
 pub struct OutputDamage {
     damage: *mut wlr_output_damage
@@ -58,7 +54,7 @@ impl OutputDamage {
     ///
     /// # Safety
     /// This function is unsafe because the `OutputDamage` should not outlive the
-    /// past in `Output`.
+    /// passed in `Output`.
     pub(crate) unsafe fn new(output: *mut wlr_output) -> Self {
         unsafe {
             let damage = wlr_output_damage_create(output);
@@ -93,18 +89,16 @@ impl OutputDamage {
     /// Returns `true` if `wlr_output_damage_swap_buffers` needs to be called.
     ///
     ///The region of the output that needs to be repainted is added to `damage`.
-    pub fn make_current<'a, T>(&mut self, damage: T) -> bool
+    pub unsafe fn make_current<'a, T>(&mut self, damage: T) -> bool
         where T: Into<Option<&'a mut PixmanRegion>>
     {
-        unsafe {
-            let mut res = false;
-            let damage = match damage.into() {
-                Some(region) => &mut region.region as *mut _,
-                None => ptr::null_mut()
-            };
-            wlr_output_damage_make_current(self.damage, &mut res, damage);
-            res
-        }
+        let mut res = false;
+        let damage = match damage.into() {
+            Some(region) => &mut region.region as *mut _,
+            None => ptr::null_mut()
+        };
+        wlr_output_damage_make_current(self.damage, &mut res, damage);
+        res
     }
 
     /// Swaps the output buffers.
@@ -112,23 +106,21 @@ impl OutputDamage {
     /// If the time of the frame isn't known, set `when` to `None`.
     ///
     /// Swapping buffers schedules a `frame` event.
-    pub fn swap_buffers<'a, T, U>(&mut self, when: T, damage: U) -> bool
+    pub unsafe fn swap_buffers<'a, T, U>(&mut self, when: T, damage: U) -> bool
         where T: Into<Option<Duration>>,
               U: Into<Option<&'a mut PixmanRegion>>
     {
-        unsafe {
-            let when = when.into().map(|duration| {
-                                           timespec { tv_sec: duration.as_secs() as i64,
-                                                      tv_nsec: duration.subsec_nanos() as i64 }
-                                       });
-            let when_ptr =
-                when.map(|mut duration| &mut duration as *mut _).unwrap_or_else(|| ptr::null_mut());
-            let damage = match damage.into() {
-                Some(region) => &mut region.region as *mut _,
-                None => ptr::null_mut()
-            };
-            wlr_output_damage_swap_buffers(self.damage, when_ptr, damage)
-        }
+        let when = when.into().map(|duration| {
+                                       timespec { tv_sec: duration.as_secs() as i64,
+                                                  tv_nsec: duration.subsec_nanos() as i64 }
+                                   });
+        let when_ptr =
+            when.map(|mut duration| &mut duration as *mut _).unwrap_or_else(|| ptr::null_mut());
+        let damage = match damage.into() {
+            Some(region) => &mut region.region as *mut _,
+            None => ptr::null_mut()
+        };
+        wlr_output_damage_swap_buffers(self.damage, when_ptr, damage)
     }
 
     /// Accumulates damage and schedules a `frame` event.

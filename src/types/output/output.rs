@@ -45,7 +45,7 @@ pub struct Output {
     /// marked function `upgrade` on a `OutputHandle`.
     liveliness: Rc<Cell<bool>>,
     /// The tracker for damage on the output.
-    damage: ManuallyDrop<OutputDamage>,
+    pub(crate) damage: ManuallyDrop<OutputDamage>,
     /// The output ptr that refers to this `Output`
     output: *mut wlr_output
 }
@@ -473,6 +473,9 @@ impl Drop for Output {
                          "Still {} weak pointers to Output {:p}",
                          weak_count,
                          self.output);
+            }
+            unsafe {
+                ManuallyDrop::drop(&mut self.damage);
             }
         } else {
             return

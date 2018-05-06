@@ -316,7 +316,7 @@ impl OutputHandler for ExOutput {
             let renderer = compositor.renderer
                                     .as_mut()
                                     .expect("Compositor was not loaded with a renderer");
-            render_shells(state, &mut renderer.render(output, None));
+            render_shells(state, &mut renderer.render(output, None).unwrap());
         }).unwrap();
     }
 }

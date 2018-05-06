@@ -199,7 +199,7 @@ impl OutputHandler for OutputEx {
             let renderer = compositor.renderer
                 .as_mut()
                 .expect("Compositor was not loaded with a renderer");
-            let mut renderer = renderer.render(output, None);
+            let mut renderer = renderer.render(output, None).unwrap();
             renderer.clear([0.25, 0.25, 0.25, 1.0]);
             let tool_color: [f32; 4] = if state.button {
                 state.tool_color.clone()
