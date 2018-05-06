@@ -1,45 +1,10 @@
-use libc::{c_int, c_uint};
-use std::{mem, ptr, time::Duration};
+use std::{ptr, time::Duration};
 use wlroots_sys::{timespec, wlr_output, wlr_output_damage, wlr_output_damage_add,
                   wlr_output_damage_add_box, wlr_output_damage_add_whole,
                   wlr_output_damage_create, wlr_output_damage_destroy,
-                  wlr_output_damage_make_current, wlr_output_damage_swap_buffers,
-                  pixman_region32_fini, pixman_region32_init, pixman_region32_t,
-                  pixman_region32_union_rect};
+                  wlr_output_damage_make_current, wlr_output_damage_swap_buffers};
 
-use Area;
-
-/// A pixman region, used for damage tracking.
-#[derive(Debug)]
-pub struct PixmanRegion {
-    pub region: pixman_region32_t
-}
-
-impl PixmanRegion {
-    /// Make a new pixman region.
-    pub fn new() -> Self {
-        unsafe {
-            // NOTE Rational for uninitialized memory:
-            // We are automatically filling it in with pixman_region32_init.
-            let mut region = mem::uninitialized();
-            pixman_region32_init(&mut region);
-            PixmanRegion { region }
-        }
-    }
-
-    pub fn rectangle(&mut self, x: c_int, y: c_int, width: c_uint, height: c_uint) {
-        unsafe {
-            let region_ptr = &mut self.region as *mut _;
-            pixman_region32_union_rect(region_ptr, region_ptr, x, y, width, height);
-        }
-    }
-}
-
-impl Drop for PixmanRegion {
-    fn drop(&mut self) {
-        unsafe { pixman_region32_fini(&mut self.region) }
-    }
-}
+use {Area, PixmanRegion};
 
 #[derive(Debug)]
 /// Tracks damage for an output.

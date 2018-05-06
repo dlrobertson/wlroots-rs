@@ -58,6 +58,7 @@ pub use wlroots_sys::{wlr_keyboard_modifiers, wlr_tablet_tool_axes, wl_shm_forma
 
 pub use self::render::{matrix_identity, matrix_multiply, matrix_projection, matrix_rotate,
                        matrix_scale, matrix_transform, matrix_translate, matrix_transpose,
-                       project_box, GenericRenderer, Image, Renderer, Texture, TextureFormat};
+                       project_box, GenericRenderer, Image, PixmanRegion, Renderer, Texture,
+                       TextureFormat};
 
 pub use self::errors::*;
