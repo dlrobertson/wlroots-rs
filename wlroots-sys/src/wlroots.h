@@ -42,6 +42,7 @@
 
 /// Util includes
 #include <wlr/util/log.h>
+#include <wlr/util/region.h>
 
 /// Misc includes
 #include <xcursor.h>
