@@ -3,7 +3,7 @@
 //!
 //! TODO This module could really use some examples, as the API surface is huge.
 
-use std::{fmt, panic, ptr, cell::Cell, rc::{Rc, Weak}, time::Duration};
+use std::{fmt, panic, ptr, cell::Cell, hash::{Hash, Hasher}, rc::{Rc, Weak}, time::Duration};
 
 use libc;
 use wayland_sys::server::{signal::wl_signal_add, WAYLAND_SERVER_HANDLE};
@@ -866,6 +866,12 @@ impl SeatHandle {
         unsafe {
             self.upgrade().ok();
         }
+    }
+}
+
+impl Hash for SeatHandle {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.seat.hash(state)
     }
 }
 

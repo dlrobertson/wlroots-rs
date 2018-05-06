@@ -2,6 +2,7 @@
 
 use libc::{self, c_double, c_int};
 use std::{fmt, panic, ptr, cell::Cell, marker::PhantomData, rc::{Rc, Weak}};
+use std::hash::{Hash, Hasher};
 
 use wayland_sys::server::{signal::wl_signal_add, WAYLAND_SERVER_HANDLE};
 use wlroots_sys::{wlr_output_effective_resolution, wlr_output_layout, wlr_output_layout_add,
@@ -491,6 +492,12 @@ impl<'output> OutputLayoutOutput<'output> {
             let (x, y) = ((*self.layout_output).x, (*self.layout_output).y);
             Origin::new(x + height, y + height)
         }
+    }
+}
+
+impl Hash for OutputLayoutHandle {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.layout.hash(state)
     }
 }
 

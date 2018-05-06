@@ -1,7 +1,7 @@
 //! TODO Documentation
 
 use libc::c_double;
-use std::{panic, ptr, cell::Cell, rc::{Rc, Weak}, time::Duration};
+use std::{panic, ptr, cell::Cell, hash::{Hash, Hasher}, rc::{Rc, Weak}, time::Duration};
 
 use wayland_sys::server::WAYLAND_SERVER_HANDLE;
 use wayland_sys::server::signal::wl_signal_add;
@@ -333,11 +333,25 @@ impl SurfaceHandle {
     }
 }
 
+impl Hash for SurfaceHandle {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.surface.hash(state)
+    }
+}
+
 impl Default for SurfaceHandle {
     fn default() -> Self {
         SurfaceHandle::new()
     }
 }
+
+impl PartialEq for SurfaceHandle {
+    fn eq(&self, other: &SurfaceHandle) -> bool {
+        self.surface == other.surface
+    }
+}
+
+impl Eq for SurfaceHandle {}
 
 impl Drop for Surface {
     fn drop(&mut self) {

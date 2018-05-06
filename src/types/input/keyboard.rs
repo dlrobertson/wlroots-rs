@@ -1,5 +1,5 @@
 //! TODO Documentation
-use std::{fmt, panic, ptr, cell::Cell, rc::{Rc, Weak}};
+use std::{fmt, panic, ptr, cell::Cell, hash::{Hash, Hasher}, rc::{Rc, Weak}};
 
 use errors::{HandleErr, HandleResult};
 use wlroots_sys::{wlr_input_device, wlr_keyboard, wlr_keyboard_get_modifiers, wlr_keyboard_led,
@@ -381,6 +381,12 @@ impl fmt::Display for KeyboardModifier {
                                      .collect();
 
         write!(formatter, "{:?}", mods)
+    }
+}
+
+impl Hash for KeyboardHandle {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.keyboard.hash(state)
     }
 }
 

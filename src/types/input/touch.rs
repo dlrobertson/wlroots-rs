@@ -1,6 +1,6 @@
 //! TODO Documentation
 
-use std::{panic, ptr, cell::Cell, rc::{Rc, Weak}};
+use std::{panic, ptr, cell::Cell, hash::{Hash, Hasher}, rc::{Rc, Weak}};
 
 use errors::{HandleErr, HandleResult};
 use wlroots_sys::{wlr_input_device, wlr_touch};
@@ -216,6 +216,12 @@ impl Clone for TouchHandle {
                       /// You can only access it after a call to `upgrade`,
                       /// and that implicitly checks that it is valid.
                       device: unsafe { self.device.clone() } }
+    }
+}
+
+impl Hash for TouchHandle {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.touch.hash(state)
     }
 }
 

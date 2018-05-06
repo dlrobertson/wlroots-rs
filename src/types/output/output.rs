@@ -3,6 +3,7 @@
 use std::{panic, ptr};
 use std::cell::Cell;
 use std::ffi::CStr;
+use std::hash::{Hash, Hasher};
 use std::mem::ManuallyDrop;
 use std::rc::{Rc, Weak};
 use std::time::Duration;
@@ -427,6 +428,7 @@ impl Output {
         unsafe { wlr_output_set_scale(self.output, scale) }
     }
 
+    /// Get a reference to the damage applied to this output so far.
     pub fn damage(&mut self) -> &mut OutputDamage {
         &mut *self.damage
     }
@@ -576,6 +578,12 @@ impl OutputHandle {
 
     pub(crate) unsafe fn as_ptr(&self) -> *mut wlr_output {
         self.output
+    }
+}
+
+impl Hash for OutputHandle {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.output.hash(state)
     }
 }
 

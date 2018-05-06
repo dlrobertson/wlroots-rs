@@ -1,6 +1,6 @@
 //! TODO Documentation
 
-use std::{panic, ptr, cell::Cell, rc::{Rc, Weak}};
+use std::{panic, ptr, cell::Cell, hash::{Hash, Hasher}, rc::{Rc, Weak}};
 
 use wlroots_sys::wlr_subsurface;
 
@@ -174,8 +174,22 @@ impl SubsurfaceHandle {
     }
 }
 
+impl Hash for SubsurfaceHandle {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.subsurface.hash(state)
+    }
+}
+
 impl Default for SubsurfaceHandle {
     fn default() -> Self {
         SubsurfaceHandle::new()
     }
 }
+
+impl PartialEq for SubsurfaceHandle {
+    fn eq(&self, other: &SubsurfaceHandle) -> bool {
+        self.subsurface == other.subsurface
+    }
+}
+
+impl Eq for SubsurfaceHandle {}

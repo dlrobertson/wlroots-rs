@@ -1,6 +1,7 @@
 //! Wrapper for wlr_cursor
 
 use std::{fmt, panic, ptr, cell::Cell, rc::{Rc, Weak}};
+use std::hash::{Hash, Hasher};
 
 use libc;
 use wayland_sys::server::WAYLAND_SERVER_HANDLE;
@@ -738,3 +739,17 @@ impl Default for CursorHandle {
         CursorHandle::new()
     }
 }
+
+impl Hash for CursorHandle {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.cursor.hash(state)
+    }
+}
+
+impl PartialEq for CursorHandle {
+    fn eq(&self, other: &CursorHandle) -> bool {
+        self.cursor == other.cursor
+    }
+}
+
+impl Eq for CursorHandle {}

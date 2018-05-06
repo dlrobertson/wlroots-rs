@@ -2,6 +2,7 @@
 
 use std::{panic, ptr};
 use std::cell::Cell;
+use std::hash::{Hash, Hasher};
 use std::rc::{Rc, Weak};
 
 use wlroots_sys::{wl_shell_surface_resize, wlr_wl_shell_surface, wlr_wl_shell_surface_configure,
@@ -219,6 +220,12 @@ impl WlShellSurfaceHandle {
 
     unsafe fn as_ptr(&self) -> *mut wlr_wl_shell_surface {
         self.shell_surface
+    }
+}
+
+impl Hash for WlShellSurfaceHandle {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.shell_surface.hash(state)
     }
 }
 

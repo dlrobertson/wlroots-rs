@@ -2,6 +2,7 @@
 
 use std::{panic, ptr};
 use std::cell::Cell;
+use std::hash::{Hash, Hasher};
 use std::rc::{Rc, Weak};
 
 use wlroots_sys::{wlr_xdg_popup_v6, wlr_xdg_surface_v6, wlr_xdg_surface_v6_ping,
@@ -290,6 +291,12 @@ impl XdgV6ShellSurfaceHandle {
 
     unsafe fn as_ptr(&self) -> *mut wlr_xdg_surface_v6 {
         self.shell_surface
+    }
+}
+
+impl Hash for XdgV6ShellSurfaceHandle {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.shell_surface.hash(state)
     }
 }
 

@@ -1,5 +1,5 @@
 //! TODO Documentation
-use std::{panic, ptr, cell::Cell, rc::{Rc, Weak}};
+use std::{panic, ptr, cell::Cell, hash::{Hash, Hasher}, rc::{Rc, Weak}};
 
 use errors::{HandleErr, HandleResult};
 use wlroots_sys::{wlr_input_device, wlr_tablet_tool};
@@ -210,6 +210,12 @@ impl Clone for TabletToolHandle {
                            /// You can only access it after a call to `upgrade`,
                            /// and that implicitly checks that it is valid.
                            device: unsafe { self.device.clone() } }
+    }
+}
+
+impl Hash for TabletToolHandle {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.tool.hash(state)
     }
 }
 
